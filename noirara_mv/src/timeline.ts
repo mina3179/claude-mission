@@ -29,13 +29,16 @@ export const LYRICS: Lyric[] = [
 ];
 LYRICS.forEach((l, i) => (l.e = i < LYRICS.length - 1 ? LYRICS[i + 1].s - 0.12 : 59.45));
 
+// Dedication lines are typed syllable by syllable (Array.from on precomposed Hangul) with a cursor.
+export const TYPE_STEP = 0.075; // seconds per character for lines 1-2
 export const DEDICATION = [
-  { s: 52.78, text: "누군가의 가장 아름다운 순간을 발견하기 위해" },
-  { s: 54.72, text: "늘 카메라 뒤에서 최선을 다하는 사람." },
+  { s: 50.85, text: "누군가의 가장 아름다운 순간을 발견하기 위해" },
+  { s: 53.0, text: "늘 카메라 뒤에서 최선을 다하는 사람." },
 ];
 export const DEDICATION_OUT = 56.35;
 export const FINAL_LINE = "그 열정과 진심에 감사드립니다.";
+export const FINAL_LINE_START = 57.35; // typed under the original logo, then held through the brand scene
+export const FINAL_TYPE_STEP = 0.085;
 export const BRAND = "Noirara"; // N uppercase, "oirara" lowercase – never NOIRARA / noirara
 export const LETTER_START = B(116); // ~59.63s
 export const LETTER_STEP = (B(118) - B(116)) / 4; // eighth note
-export const FINAL_LINE_START = 62.1;

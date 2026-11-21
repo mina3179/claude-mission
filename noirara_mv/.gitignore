@@ -6,3 +6,4 @@ assets/
 public/
 output/*.mp4
 output/*.jpg
+output/review_frames/

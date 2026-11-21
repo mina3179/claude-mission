@@ -16,7 +16,8 @@ import {
   TILE_W,
   W,
 } from "./components";
-import { B, BRAND, FINAL_LINE, FINAL_LINE_START, LETTER_START, LETTER_STEP } from "./timeline";
+import { B, BRAND, LETTER_START, LETTER_STEP } from "./timeline";
+import { SIZES } from "./assets2";
 import { clamp, easeInCubic, easeInOutCubic, easeInOutSine, easeOutCubic, easeOutExpo, lerp, rand, ramp } from "./util";
 
 const WT = { w: 1086, h: 1448 };
@@ -26,6 +27,11 @@ const P658 = { src: "provided_photos/1000127658_webtoon.webp", blur: "blur/10001
 // The user's own photos – used for every single-photo ("hero") shot
 type Pic = { src: string; blur: string; w: number; h: number };
 const U = (name: string, w: number, h: number): Pic => ({ src: `provided_photos/${name}.jpg`, blur: `blur/${name}.jpg`, w, h });
+// second batch: new portfolio tiles (tiles2/) and on-set photos cropped clear of Instagram UI (onset/)
+const T2 = (id: string): Pic => ({ src: `tiles2/${id}.png`, blur: `blur/${id}.jpg`, w: SIZES[id][0], h: SIZES[id][1] });
+const ONSET_STOOL: Pic = { src: "onset/onset_stool.png", blur: "blur/onset_stool.jpg", w: SIZES.onset_stool[0], h: SIZES.onset_stool[1] };
+const ONSET_DUMBBELL: Pic = { src: "onset/onset_dumbbell.png", blur: "blur/onset_dumbbell.jpg", w: SIZES.onset_dumbbell[0], h: SIZES.onset_dumbbell[1] };
+const anySrc = (id: string) => (id.startsWith("grid_") ? `tiles2/${id}.png` : tileSrc(id));
 const U1 = U("user_01_pink", 1056, 1079);
 const U2 = U("user_02_denim", 1037, 1350);
 const U3 = U("user_03_black", 923, 1350);
@@ -169,8 +175,9 @@ const R2: Scene = {
 /* contact sheet with grease-pencil selection */
 type Frame = { src: string; w: number; h: number; label: string };
 const tileFrame = (id: string, label: string): Frame => ({ src: tileSrc(id), w: TILE_W * 3, h: TILE_H * 3, label });
-const LEFT: Frame[] = [tileFrame("1000127649_r1c0", "06A"), { src: P655.src, w: P655.w, h: P655.h, label: "07A" }, tileFrame("1000127645_r2c0", "08A"), tileFrame("1000127645_r1c2", "09A")];
-const RIGHT: Frame[] = [tileFrame("1000127647_r0c1", "11A"), { src: P658.src, w: P658.w, h: P658.h, label: "12A" }, tileFrame("1000127649_r2c2", "13A"), tileFrame("1000127647_r0c2", "14A")];
+const t2Frame = (id: string, label: string): Frame => ({ src: `tiles2/${id}.png`, w: SIZES[id][0], h: SIZES[id][1], label });
+const LEFT: Frame[] = [tileFrame("1000127649_r1c0", "06A"), t2Frame("grid_b_r2c0", "07A"), tileFrame("1000127645_r2c0", "08A"), tileFrame("1000127645_r1c2", "09A")];
+const RIGHT: Frame[] = [tileFrame("1000127645_r0c0", "11A"), t2Frame("grid_a_r2c2", "12A"), tileFrame("1000127649_r2c2", "13A"), tileFrame("1000127647_r0c2", "14A")];
 const FW = 430;
 const GAP = 84;
 const layout = (fr: Frame[]) => {
@@ -270,9 +277,10 @@ const R3: Scene = {
 /* portfolio wall – the three real profile grids, scrolling up and sparkling */
 const GRIDS = [
   { src: "tiles_x3/1000127645_grid.png", w: 709, h: 942 },
-  { src: "tiles_x3/1000127647_grid.png", w: 709, h: 942 },
-  { src: "tiles_x3/1000127649_grid.png", w: 709, h: 926 },
+  { src: "tiles2/grid_a_page.png", w: SIZES.grid_a_page[0], h: SIZES.grid_a_page[1] },
+  { src: "tiles2/grid_b_page.png", w: SIZES.grid_b_page[0], h: SIZES.grid_b_page[1] },
 ];
+const GRID_647 = { src: "tiles_x3/1000127647_grid.png", w: 709, h: 942 };
 const R4: Scene = {
   id: "R4 portfolio wall",
   s: B(54),
@@ -280,8 +288,7 @@ const R4: Scene = {
   enter: { type: "fade", d: 0.3 },
   leak: 0.3,
   render: (lt, dur) => {
-    const sc = W / 709;
-    const hs = GRIDS.map((g) => g.h * sc);
+    const hs = GRIDS.map((g) => (g.h * W) / g.w);
     const total = hs.reduce((a, b) => a + b, 0) + 16 * 2;
     const y = -lerp(0, total - H + 200, Math.pow(clamp(lt / dur), 1.7));
     let acc = 0;
@@ -437,18 +444,18 @@ const C2: Scene = {
 };
 
 const MOSAIC = [
-  "1000127645_r0c0",
-  "1000127645_r0c2",
-  "1000127645_r1c0",
-  "1000127645_r1c2",
-  "1000127645_r2c0",
-  "1000127647_r0c0",
-  "1000127647_r0c2",
-  "1000127647_r1c0",
-  "1000127647_r1c2",
-  "1000127649_r1c0",
-  "1000127649_r1c2",
-  "1000127649_r2c0",
+  "grid_a_r0c0",
+  "grid_a_r0c1",
+  "grid_a_r0c2",
+  "grid_a_r1c0",
+  "grid_a_r1c1",
+  "grid_a_r2c0",
+  "grid_b_r0c0",
+  "grid_b_r0c2",
+  "grid_b_r1c0",
+  "grid_b_r1c2",
+  "grid_b_r2c1",
+  "grid_c_r2c2",
 ];
 const POP_ORDER = [4, 1, 9, 6, 0, 11, 3, 8, 2, 10, 5, 7];
 const C3: Scene = {
@@ -471,7 +478,7 @@ const C3: Scene = {
         <div key={idx} style={{ position: "absolute", left: c * 360, top: r * 480, width: 360, height: 480, overflow: "hidden", background: "#0d0b0e" }}>
           {ll >= 0 ? (
             <>
-              <Img src={staticFile(tileSrc(id))} style={{ width: 360, height: 480, objectFit: "cover", transform: `scale(${lerp(1.25, 1, e)})`, opacity: e }} />
+              <Img src={staticFile(anySrc(id))} style={{ width: 360, height: 480, objectFit: "cover", transform: `scale(${lerp(1.25, 1, e)})`, opacity: e }} />
               <div style={{ position: "absolute", inset: 0, background: "#fffaf3", opacity: Math.exp(-ll / 0.12) * 0.85 }} />
             </>
           ) : null}
@@ -555,7 +562,7 @@ const C5: Scene = {
   e: B(94),
   leak: 0.2,
   render: (lt, dur) => {
-    const g = GRIDS[1];
+    const g = GRID_647;
     const fitS = (W - 120) / g.w;
     const s = lerp(3.0, fitS, easeInOutCubic(lt / dur));
     // focus on the tile row1 col1 (centre of the page) – it carries the Noirara mark
@@ -578,10 +585,10 @@ const C5: Scene = {
    OUTRO (48.65 – end)
    ===================================================================== */
 const SEASONS = [
-  { pic: U1, w: "spring" },
-  { pic: U2, w: "summer" },
-  { pic: U3, w: "autumn" },
-  { pic: U4, w: "winter" },
+  { pic: T2("grid_a_r1c2"), w: "spring" },
+  { pic: T2("grid_c_r0c2"), w: "summer" },
+  { pic: T2("grid_a_r2c1"), w: "autumn" },
+  { pic: T2("grid_c_r3c2"), w: "winter" },
 ];
 const O1: Scene = {
   id: "O1 seasons",
@@ -610,16 +617,16 @@ const O1: Scene = {
 };
 
 const O2: Scene = {
-  id: "O2 on-set warm 1000127658",
+  id: "O2 on-set onset_stool",
   s: B(98),
   e: B(102),
   enter: { type: "fade", d: 0.3 },
   leak: 0.35,
   render: (lt, dur) => (
     <>
-      <BlurBg src={P658.blur} dim={0.48} tint="linear-gradient(180deg,#ffb59a,#ffd29a)" />
-      <PhotoCard {...P658} cy={800} zoom={lerp(1.0, 1.08, easeInOutSine(lt / dur))} fx={0.6} fy={0.6} />
-      <Flare x={850} y={420} k={0.3} />
+      <BlurBg src={ONSET_STOOL.blur} dim={0.5} tint="linear-gradient(180deg,#ffb59a,#ffd29a)" />
+      <PhotoCard {...ONSET_STOOL} cy={905} maxW={900} maxH={960} zoom={lerp(1.0, 1.06, easeInOutSine(lt / dur))} fx={0.5} fy={0.5} />
+      <Flare x={850} y={520} k={0.25} />
     </>
   ),
 };
@@ -639,15 +646,15 @@ const O3: Scene = {
 };
 
 const O4: Scene = {
-  id: "O4 on-set + dedication 2",
+  id: "O4 on-set onset_dumbbell + dedication 2",
   s: B(106),
   e: B(110),
   enter: { type: "fade", d: 0.3 },
   leak: 0.22,
   render: (lt, dur) => (
     <>
-      <BlurBg src={P655.blur} dim={0.52} />
-      <PhotoCard {...P655} cy={905} maxH={960} maxW={900} zoom={lerp(1, 1.08, easeInOutSine(lt / dur))} fx={0.28} fy={0.55} />
+      <BlurBg src={ONSET_DUMBBELL.blur} dim={0.52} />
+      <PhotoCard {...ONSET_DUMBBELL} cy={905} maxH={960} maxW={900} zoom={lerp(1, 1.06, easeInOutSine(lt / dur))} fx={0.3} fy={0.6} />
     </>
   ),
 };
@@ -661,7 +668,7 @@ const E1: Scene = {
   enter: { type: "fade", d: 0.35 },
   leak: 0.12,
   render: (lt, dur) => {
-    const disp = 760; // displayed emblem diameter
+    const disp = 620; // displayed emblem diameter
     const s = disp / 1480;
     const o = easeOutCubic(ramp(lt, 0, 0.7)) * (1 - easeInOutSine(ramp(lt, dur - 0.6, dur)));
     const sc = lerp(0.93, 1.02, easeOutCubic(lt / dur)) * lerp(1, 1.05, ramp(lt, dur - 0.6, dur));
@@ -672,7 +679,7 @@ const E1: Scene = {
           style={{
             position: "absolute",
             left: 540 - 762 * s,
-            top: 860 - 776 * s,
+            top: 640 - 776 * s,
             width: LOGO_D * s,
             height: LOGO_D * s,
             opacity: o,
@@ -696,9 +703,8 @@ const E2: Scene = {
   enter: { type: "fade", d: 0.3 },
   leak: 0.1,
   render: (_lt, _dur, t) => {
-    const letters = BRAND.split("");
+    const letters = Array.from(BRAND);
     const lineW = 220 * easeInOutCubic(ramp(t, LETTER_START + 7 * LETTER_STEP + 0.1, LETTER_START + 7 * LETTER_STEP + 0.8));
-    const fl = ramp(t, FINAL_LINE_START, FINAL_LINE_START + 1.0);
     return (
       <AbsoluteFill style={{ background: "radial-gradient(ellipse 70% 50% at 50% 46%, #2a1c1f 0%, #0b0809 65%, #050405 100%)" }}>
         <Bokeh t={t} n={18} o={0.9} />
@@ -730,25 +736,6 @@ const E2: Scene = {
           })}
         </div>
         <div style={{ position: "absolute", left: 540 - lineW / 2, top: 1010, width: lineW, height: 2, background: COLORS.gold, opacity: 0.9 }} />
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: W,
-            top: 1050,
-            textAlign: "center",
-            fontFamily: FONTS.serifKr,
-            fontWeight: 500,
-            fontSize: 46,
-            letterSpacing: "0.04em",
-            color: "#f3e6d6",
-            opacity: easeOutCubic(fl),
-            transform: `translateY(${(1 - easeOutCubic(fl)) * 18}px)`,
-            clipPath: `inset(0 ${(1 - easeInOutCubic(ramp(t, FINAL_LINE_START, FINAL_LINE_START + 0.9))) * 100}% 0 0)`,
-          }}
-        >
-          {FINAL_LINE}
-        </div>
       </AbsoluteFill>
     );
   },

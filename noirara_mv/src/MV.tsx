@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import { AbsoluteFill, continueRender, delayRender, useCurrentFrame } from "remotion";
 import { BlurBg, COLORS, Flash, FlashEv, FONTS, Grain, H, LightLeak, PhotoCard, Vignette, W } from "./components";
 import { Scene, SCENES } from "./scenes";
-import { B, BRAND, DEDICATION, DEDICATION_OUT, FINAL_LINE, FPS, LYRICS } from "./timeline";
+import { B, BRAND, DEDICATION, DEDICATION_OUT, FINAL_LINE, FINAL_LINE_START, FINAL_TYPE_STEP, FPS, LETTER_START, LYRICS, TYPE_STEP } from "./timeline";
 import { clamp, easeInCubic, easeInOutCubic, easeOutCubic, lerp, ramp } from "./util";
 
 /* ---------------- fonts must be ready before any frame is captured ---------------- */
@@ -134,34 +134,59 @@ const Lyrics: React.FC<{ t: number }> = ({ t }) => (
   </>
 );
 
-/* ---------------- dedication lines 1 & 2 (sequential) ---------------- */
-const Dedication: React.FC<{ t: number }> = ({ t }) => {
-  if (t < DEDICATION[0].s - 0.05 || t > DEDICATION_OUT + 0.4) return null;
-  const out = 1 - ramp(t, DEDICATION_OUT, DEDICATION_OUT + 0.35);
+/* ---------------- typewriter: Hangul syllables appear one by one, with a soft cursor ---------------- */
+const IVORY = "#fbf3ea";
+const Typed: React.FC<{ text: string; t: number; start: number; step: number; cursorOff: number; size: number; color?: string }> = ({
+  text,
+  t,
+  start,
+  step,
+  cursorOff,
+  size,
+  color = IVORY,
+}) => {
+  const chars = Array.from(text); // precomposed Hangul syllables -> one entry each
+  const n = t < start ? 0 : Math.min(chars.length, Math.floor((t - start) / step) + 1);
+  const typed = chars.slice(0, n).join("");
+  const rest = chars.slice(n).join("");
+  const done = start + chars.length * step;
+  // solid while typing, blinking (≈2.3 Hz) once the line is complete, then fades away
+  const blink = t < done ? 1 : Math.floor((t - done) * 4.6) % 2 === 0 ? 1 : 0.15;
+  const cursorO = t < start - 0.35 || t > cursorOff + 0.2 ? 0 : blink * ramp(t, start - 0.35, start - 0.1) * (1 - ramp(t, cursorOff, cursorOff + 0.2));
   return (
-    <div style={{ position: "absolute", left: 0, width: W, top: 236, textAlign: "center", opacity: out }}>
-      {DEDICATION.map((d, i) => {
-        const p = ramp(t, d.s, d.s + 0.8);
-        return (
-          <div
-            key={i}
-            style={{
-              fontFamily: FONTS.serifKr,
-              fontWeight: 500,
-              fontSize: 40,
-              lineHeight: "64px",
-              letterSpacing: "0.01em",
-              color: i === 0 ? "#fbf3ea" : "#ffe2c6",
-              textShadow: "0 2px 18px rgba(0,0,0,0.7)",
-              opacity: easeOutCubic(p),
-              transform: `translateY(${(1 - easeOutCubic(p)) * 14}px)`,
-              clipPath: `inset(-20px ${(1 - easeInOutCubic(p)) * 100}% -20px 0)`,
-            }}
-          >
-            {d.text}
-          </div>
-        );
-      })}
+    <div style={{ fontFamily: FONTS.serifKr, fontWeight: 500, fontSize: size, lineHeight: `${Math.round(size * 1.6)}px`, color, letterSpacing: "0.01em", textShadow: "0 2px 14px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.6)", whiteSpace: "nowrap" }}>
+      <span>{typed}</span>
+      <span style={{ display: "inline-block", width: 0, position: "relative" }}>
+        <span style={{ position: "absolute", left: 3, top: -size * 0.82, width: 3, height: size * 0.98, background: color, opacity: cursorO, boxShadow: "0 0 8px rgba(255,240,220,0.6)" }} />
+      </span>
+      <span style={{ opacity: 0 }}>{rest}</span>
+    </div>
+  );
+};
+
+/* dedication lines 1 & 2 (typed in order, top safe area, over the last lyric photos) */
+const Dedication: React.FC<{ t: number }> = ({ t }) => {
+  if (t < DEDICATION[0].s - 0.5 || t > DEDICATION_OUT + 0.4) return null;
+  const out = 1 - ramp(t, DEDICATION_OUT, DEDICATION_OUT + 0.35);
+  const band = ramp(t, DEDICATION[0].s - 0.5, DEDICATION[0].s) * out;
+  return (
+    <>
+      <div style={{ position: "absolute", left: 0, top: 150, width: W, height: 330, opacity: band, background: "linear-gradient(180deg, rgba(8,6,9,0) 0%, rgba(8,6,9,0.62) 30%, rgba(8,6,9,0.62) 70%, rgba(8,6,9,0) 100%)" }} />
+      <div style={{ position: "absolute", left: 0, width: W, top: 236, textAlign: "center", opacity: out }}>
+        {DEDICATION.map((d, i) => (
+          <Typed key={i} text={d.text} t={t} start={d.s} step={TYPE_STEP} size={40} cursorOff={i === 0 ? DEDICATION[1].s - 0.15 : DEDICATION_OUT} color={i === 0 ? IVORY : "#ffe9d2"} />
+        ))}
+      </div>
+    </>
+  );
+};
+
+/* dedication line 3: typed under the original logo and held through the final Noirara screen */
+const FinalLine: React.FC<{ t: number }> = ({ t }) => {
+  if (t < FINAL_LINE_START - 0.4) return null;
+  return (
+    <div style={{ position: "absolute", left: 0, width: W, top: 1052, textAlign: "center" }}>
+      <Typed text={FINAL_LINE} t={t} start={FINAL_LINE_START} step={FINAL_TYPE_STEP} size={46} cursorOff={LETTER_START} color="#f6eadb" />
     </div>
   );
 };
@@ -210,6 +235,7 @@ export const MV: React.FC = () => {
       <Vignette k={0.45} />
       <OpeningTitle t={t} />
       <Dedication t={t} />
+      <FinalLine t={t} />
       <Lyrics t={t} />
       <Flash t={t} events={FLASHES} />
       <Grain frame={frame} o={0.06} />

@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 AUDIO=assets/audio/noirara_original.mp3
-OUT=output/NOIRARA_MV_final_1080x1920.mp4
+OUT=${OUT:-output/Noirara_MV_revised_1080x1920.mp4}
 ffmpeg -v error -y -i build/video_noaudio.mp4 -i "$AUDIO" \
   -map 0:v:0 -map 1:a:0 -c:v copy -c:a copy \
   -metadata title="Noirara — BEHIND THE LIGHT" -movflags +faststart "$OUT"
