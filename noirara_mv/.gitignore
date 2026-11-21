@@ -1,0 +1,8 @@
+node_modules/
+build/
+# Media (real people's photos, portfolio works, original song, rendered video) are NOT
+# committed: this repository is public and publication consent must be confirmed first.
+assets/
+public/
+output/*.mp4
+output/*.jpg
