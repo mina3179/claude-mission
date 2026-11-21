@@ -21,7 +21,15 @@ import { clamp, easeInCubic, easeInOutCubic, easeInOutSine, easeOutCubic, easeOu
 
 const WT = { w: 1086, h: 1448 };
 const P655 = { src: "provided_photos/1000127655.jpg", blur: "blur/1000127655.jpg", w: 1052, h: 1536 };
-const P658 = { src: "provided_photos/1000127658.jpg", blur: "blur/1000127658.jpg", w: 994, h: 1536 };
+// On-set photo 1000127658 is used in the user-supplied version where the model was redrawn as webtoon
+const P658 = { src: "provided_photos/1000127658_webtoon.webp", blur: "blur/1000127658_webtoon.jpg", w: 1024, h: 1536 };
+// The user's own photos – used for every single-photo ("hero") shot
+type Pic = { src: string; blur: string; w: number; h: number };
+const U = (name: string, w: number, h: number): Pic => ({ src: `provided_photos/${name}.jpg`, blur: `blur/${name}.jpg`, w, h });
+const U1 = U("user_01_pink", 1056, 1079);
+const U2 = U("user_02_denim", 1037, 1350);
+const U3 = U("user_03_black", 923, 1350);
+const U4 = U("user_04_pearl", 1079, 1350);
 
 export type Trans = { type: "fade" | "whip" | "push" | "zoom" | "cut"; d: number };
 export type Scene = {
@@ -303,7 +311,14 @@ const R4: Scene = {
 /* =====================================================================
    CHORUS (32.39 – 48.65s)
    ===================================================================== */
-const VF_TILES = ["1000127645_r2c1", "1000127647_r1c1", "1000127645_r1c1", "1000127647_r2c1"];
+const VF_PICS = [U1, U2, U3, U4];
+// face centre in each photo (source pixels) – the AF box locks onto the face
+const VF_FACE = [
+  [478, 168],
+  [515, 245],
+  [470, 425],
+  [545, 235],
+];
 const C1: Scene = {
   id: "C1 viewfinder shots",
   s: B(62),
@@ -314,26 +329,17 @@ const C1: Scene = {
     for (let i = 0; i < 4; i++) if (t >= B(62 + 2 * i)) k = i;
     const st = B(62 + 2 * k);
     const ll = t - st;
-    const id = VF_TILES[k];
+    const pic = VF_PICS[k];
     const af = easeOutCubic(ramp(ll, 0.05, 0.3));
     const shots = 248 - k;
+    const vs = Math.min(780 / pic.w, 1060 / pic.h);
+    const afx = 540 - (pic.w * vs) / 2 + VF_FACE[k][0] * vs;
+    const afy = 820 - (pic.h * vs) / 2 + VF_FACE[k][1] * vs;
     return (
       <>
-        <BlurBg src={tileBlur(id)} dim={0.42} scale={1.25} />
+        <BlurBg src={pic.blur} dim={0.42} scale={1.25} />
         <div style={{ position: "absolute", left: 0, top: 0, width: W, height: H, transform: `scale(${lerp(1.05, 1, easeOutExpo(ramp(ll, 0, 0.5)))})` }}>
-          <div
-            style={{
-              position: "absolute",
-              left: (W - 702) / 2,
-              top: 820 - 933 / 2,
-              width: 702,
-              height: 933,
-              overflow: "hidden",
-              boxShadow: "0 40px 100px rgba(0,0,0,0.6)",
-            }}
-          >
-            <Img src={staticFile(tileSrc(id))} style={{ width: 702, height: 933, objectFit: "cover", transform: `scale(${lerp(1, 1.035, ll / 1.0)})` }} />
-          </div>
+          <PhotoCard {...pic} cy={820} maxW={780} maxH={1060} border={0} zoom={lerp(1, 1.035, ll / 1.0)} />
         </div>
         {/* viewfinder HUD */}
         <svg width={W} height={H} style={{ position: "absolute", left: 0, top: 0 }}>
@@ -346,8 +352,8 @@ const C1: Scene = {
             <path key={i} d={`M${x},${y + 70 * dy} L${x},${y} L${x + 70 * dx},${y}`} stroke="rgba(255,255,255,0.85)" strokeWidth={4} fill="none" />
           ))}
           <rect
-            x={540 - lerp(110, 70, af)}
-            y={700 - lerp(110, 70, af)}
+            x={afx - lerp(110, 70, af)}
+            y={afy - lerp(110, 70, af)}
             width={lerp(220, 140, af)}
             height={lerp(220, 140, af)}
             fill="none"
@@ -364,62 +370,51 @@ const C1: Scene = {
   },
 };
 
-const Cover: React.FC<{ id: string; issue: string; line: string; ll: number; x: number }> = ({ id, issue, line, ll, x }) => {
+const Cover: React.FC<{ pic: Pic; issue: string; line: string; ll: number; x: number }> = ({ pic, issue, line, ll, x }) => {
   const e = easeOutExpo(ramp(ll, 0, 0.6));
   return (
     <div style={{ position: "absolute", left: x, top: 0, width: W, height: H }}>
-      <BlurBg src={tileBlur(id)} dim={0.35} scale={1.3} tint="linear-gradient(160deg,#ffb59a,#ff8fb1 50%,#8fd3ff)" />
+      <BlurBg src={pic.blur} dim={0.4} scale={1.3} tint="linear-gradient(160deg,#ffb59a,#ff8fb1 50%,#8fd3ff)" />
       <div
         style={{
           position: "absolute",
-          left: (W - 760) / 2,
-          top: 800 - 1010 / 2,
-          width: 760,
-          height: 1010,
-          overflow: "hidden",
-          boxShadow: "0 50px 120px rgba(0,0,0,0.55)",
-          transform: `translateY(${(1 - e) * 80}px) rotate(${(1 - e) * -3}deg) scale(${lerp(1.04, 1, e)})`,
+          left: 0,
+          width: W,
+          top: 168,
+          textAlign: "center",
+          fontFamily: FONTS.didone,
+          fontSize: 140,
+          lineHeight: 1,
+          color: "#fff",
+          letterSpacing: "0.02em",
+          textShadow: "0 4px 30px rgba(0,0,0,0.35)",
+          opacity: ramp(ll, 0.05, 0.4),
+          transform: `translateY(${(1 - easeOutCubic(ramp(ll, 0.05, 0.6))) * -30}px)`,
         }}
       >
-        <Img src={staticFile(tileSrc(id))} style={{ width: 760, height: 1010, objectFit: "cover", transform: `scale(${lerp(1, 1.04, ll / 2)})` }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.38), transparent 22%, transparent 70%, rgba(0,0,0,0.55))" }} />
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: 760,
-            top: 22,
-            textAlign: "center",
-            fontFamily: FONTS.didone,
-            fontSize: 150,
-            lineHeight: 1,
-            color: "#fff",
-            letterSpacing: "0.02em",
-            opacity: ramp(ll, 0.1, 0.45),
-            transform: `translateY(${(1 - easeOutCubic(ramp(ll, 0.1, 0.6))) * -30}px)`,
-          }}
-        >
-          {BRAND}
-        </div>
-        <div style={{ position: "absolute", left: 34, bottom: 34, color: "#fff", opacity: ramp(ll, 0.35, 0.75) }}>
-          <div style={{ fontFamily: FONTS.garamond, fontSize: 26, letterSpacing: "0.32em" }}>{issue}</div>
-          <div style={{ fontFamily: FONTS.garamond, fontStyle: "italic", fontSize: 48, lineHeight: 1.1, marginTop: 6 }}>{line}</div>
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            right: 26,
-            top: 300,
-            writingMode: "vertical-rl",
-            fontFamily: FONTS.garamond,
-            fontSize: 24,
-            letterSpacing: "0.5em",
-            color: "rgba(255,255,255,0.9)",
-            opacity: ramp(ll, 0.35, 0.75),
-          }}
-        >
-          BEHIND THE LIGHT
-        </div>
+        {BRAND}
+      </div>
+      <div style={{ position: "absolute", left: 0, width: W, top: 330, textAlign: "center", color: "#fff", opacity: ramp(ll, 0.3, 0.7) }}>
+        <span style={{ fontFamily: FONTS.garamond, fontSize: 26, letterSpacing: "0.32em" }}>{issue}</span>
+        <span style={{ fontFamily: FONTS.garamond, fontStyle: "italic", fontSize: 38, marginLeft: 18 }}>{line}</span>
+      </div>
+      <div style={{ position: "absolute", left: 0, top: 0, width: W, height: H, transform: `translateY(${(1 - e) * 80}px)` }}>
+        <PhotoCard {...pic} cy={880} maxW={740} maxH={900} border={0} rot={(1 - e) * -3} scale={lerp(1.04, 1, e)} zoom={lerp(1, 1.03, ll / 2)} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          right: 40,
+          top: 560,
+          writingMode: "vertical-rl",
+          fontFamily: FONTS.garamond,
+          fontSize: 24,
+          letterSpacing: "0.5em",
+          color: "rgba(255,255,255,0.9)",
+          opacity: ramp(ll, 0.35, 0.75),
+        }}
+      >
+        BEHIND THE LIGHT
       </div>
     </div>
   );
@@ -434,8 +429,8 @@ const C2: Scene = {
     const push = easeInOutCubic(ramp(t, sw - 0.15, sw + 0.3));
     return (
       <AbsoluteFill style={{ overflow: "hidden" }}>
-        <Cover id="1000127647_r2c2" issue="ISSUE No. 01" line="the real you" ll={t - B(70)} x={-push * W} />
-        {t > sw - 0.2 ? <Cover id="1000127649_r2c2" issue="ISSUE No. 02" line="found in a click" ll={t - sw} x={(1 - push) * W} /> : null}
+        <Cover pic={U4} issue="ISSUE No. 01" line="the real you" ll={t - B(70)} x={-push * W} />
+        {t > sw - 0.2 ? <Cover pic={U1} issue="ISSUE No. 02" line="found in a click" ll={t - sw} x={(1 - push) * W} /> : null}
       </AbsoluteFill>
     );
   },
@@ -583,10 +578,10 @@ const C5: Scene = {
    OUTRO (48.65 – end)
    ===================================================================== */
 const SEASONS = [
-  { id: "1000127649_r2c1", w: "spring" },
-  { id: "1000127645_r2c2", w: "summer" },
-  { id: "1000127649_r1c1", w: "autumn" },
-  { id: "1000127647_r2c0", w: "winter" },
+  { pic: U1, w: "spring" },
+  { pic: U2, w: "summer" },
+  { pic: U3, w: "autumn" },
+  { pic: U4, w: "winter" },
 ];
 const O1: Scene = {
   id: "O1 seasons",
@@ -601,11 +596,9 @@ const O1: Scene = {
         const o = i === 0 ? 1 : easeInOutSine(ramp(t, st - 0.12, st + 0.18));
         if (t < st - 0.12) return null;
         return (
-          <AbsoluteFill key={sn.id} style={{ opacity: o }}>
-            <BlurBg src={tileBlur(sn.id)} dim={0.4} scale={1.3} />
-            <div style={{ position: "absolute", left: (W - 660) / 2, top: 800 - 440, width: 660, height: 878, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.55)" }}>
-              <Img src={staticFile(tileSrc(sn.id))} style={{ width: 660, height: 878, objectFit: "cover", transform: `scale(${lerp(1.06, 1, ramp(t, st, st + 1.2))})` }} />
-            </div>
+          <AbsoluteFill key={sn.w} style={{ opacity: o }}>
+            <BlurBg src={sn.pic.blur} dim={0.4} scale={1.3} />
+            <PhotoCard {...sn.pic} cy={790} maxW={720} maxH={900} border={0} zoom={lerp(1.05, 1, ramp(t, st, st + 1.2))} />
             <div style={{ position: "absolute", left: 0, width: W, top: 1268, textAlign: "center", fontFamily: FONTS.garamond, fontStyle: "italic", fontSize: 58, color: COLORS.cream, letterSpacing: "0.06em" }}>
               {sn.w}
             </div>
@@ -639,10 +632,8 @@ const O3: Scene = {
   leak: 0.22,
   render: (lt, dur) => (
     <>
-      <BlurBg src={tileBlur("1000127647_r1c1")} dim={0.5} scale={1.3} />
-      <div style={{ position: "absolute", left: (W - 720) / 2, top: 905 - 479, width: 720, height: 958, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.55)" }}>
-        <Img src={staticFile(tileSrc("1000127647_r1c1"))} style={{ width: 720, height: 958, objectFit: "cover", transform: `scale(${lerp(1, 1.05, lt / dur)})` }} />
-      </div>
+      <BlurBg src={U3.blur} dim={0.5} scale={1.3} />
+      <PhotoCard {...U3} cy={905} maxW={760} maxH={960} border={0} zoom={lerp(1, 1.05, lt / dur)} />
     </>
   ),
 };

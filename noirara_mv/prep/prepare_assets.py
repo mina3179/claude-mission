@@ -68,7 +68,7 @@ def blurred(src, dst, radius=18):
     small = im.resize((max(1, int(im.width * s)), max(1, int(im.height * s))), Image.LANCZOS)
     small.filter(ImageFilter.GaussianBlur(radius)).save(dst, quality=92)
 
-for f in (P / "provided_photos").glob("*.jpg"):
+for f in list((P / "provided_photos").glob("*.jpg")) + list((P / "provided_photos").glob("*.webp")):
     blurred(f, P / "blur" / f"{f.stem}.jpg")
 for f in (P / "webtoon").glob("*.png"):
     blurred(f, P / "blur" / f"{f.stem}.jpg")
