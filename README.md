@@ -18,3 +18,8 @@ python3 motion_subtitle.py subtitle_motion.mp4
 ```
 
 자막 문구는 `motion_subtitle.py`의 `CUES` 목록에서 바꿀 수 있습니다.
+
+## techno_motion/ — 테크노자동차정비 원스톱 사고수리 30초 세로형 모션그래픽
+
+- 결과물: `techno_motion/out/techno_onestop_30s.mp4` (1080×1920, 30fps, 30초, BGM·효과음 포함)
+- 수정 가능한 소스와 빌드 방법: [`techno_motion/README.md`](techno_motion/README.md)

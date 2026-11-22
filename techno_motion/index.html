@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>테크노자동차정비 원스톱 — 모션그래픽</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  html, body { margin: 0; background: #1d2b2d; height: 100%; font-family: NanumSquareRound, sans-serif; }
+  #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; }
+  canvas { height: calc(100vh - 70px); width: auto; aspect-ratio: 9 / 16; border-radius: 14px; background: #fff; }
+  body.render canvas { height: 1920px; width: 1080px; border-radius: 0; }
+  #ui { display: flex; gap: 10px; align-items: center; color: #fff; width: min(90vw, 560px); }
+  #ui[hidden] { display: none; }
+  #seek { flex: 1; }
+  #play { width: 44px; height: 36px; border-radius: 18px; border: 0; background: #FF8B7B; color: #fff; font-size: 16px; cursor: pointer; }
+  #time { min-width: 190px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="1080" height="1920"></canvas>
+  <div id="ui" hidden>
+    <button id="play">▶</button>
+    <input id="seek" type="range" min="0" max="30" step="0.0333" value="0">
+    <span id="time"></span>
+  </div>
+</div>
+<audio id="audio" src="out/audio.wav" preload="auto"></audio>
+<script>if (location.search.includes('render')) document.body.className = 'render';</script>
+<script src="src/core.js"></script>
+<script src="src/characters.js"></script>
+<script src="src/scenes.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
