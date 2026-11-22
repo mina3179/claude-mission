@@ -188,7 +188,7 @@ def brand_mark(layer, t):
     f = font(CORM, 34, var=b"SemiBold")
     s = "OOM  AESTHETIC"
     tw = text_w(f, s, 7)
-    ring = ring_patch(11, 2.0, 1.0, GOLD, int(230 * a), dot=2.4)
+    ring = ring_patch(11, 2.0, 1.0, COCOA, int(240 * a), dot=2.4)
     x0 = W / 2 - (tw + 34) / 2
     paste_center(layer, ring, x0 + 11, 118)
     txt = Image.new("RGBA", (W, 80), (0, 0, 0, 0))
@@ -381,10 +381,10 @@ def ov_s4(layer, t):
         a = max(0, math.sin((lt * 1.6 + ph) * math.pi / 2)) ** 3 * eio((lt - 0.8) / 0.8) * out
         sparkle(layer, x, y, r, a * 0.9)
     step_label(layer, t, 15.35, 19.55, "03", "PREMIUM CARE", 1412)
-    fs = font(SERIF_KR, 50)
-    draw_chars(layer, "나에게 맞는 관리만 골라서", W / 2, 1500, fs, ROSE, t, 15.5, 19.55, stagger=0.02)
-    fb = font(SERIF_KR_B, 112)
-    draw_chars(layer, "해드립니다", W / 2, 1580, fb, COCOA, t, 16.1, 19.55, stagger=0.09, rise=40)
+    fs = font(SERIF_KR, 58)
+    draw_chars(layer, "나에게 맞는 관리만 골라서", W / 2, 1500, fs, COCOA, t, 15.5, 19.55, stagger=0.025)
+    fb = font(SERIF_KR_B, 70)
+    draw_chars(layer, "해드립니다", W / 2, 1590, fb, COCOA, t, 16.1, 19.55, stagger=0.06)
 
 
 def ov_s5(layer, t):
@@ -436,7 +436,7 @@ def ov_end(layer, t):
     # 링(진단 렌즈)이 먼저 그려짐 → 26.0s 완성
     rp = eio((lt - 0.2) / 0.8)
     if rp > 0:
-        ring = ring_patch(ring_r, 5, rp, GOLD, 255, dot=8 * eob((lt - 0.95) / 0.4) if lt > 0.95 else 0)
+        ring = ring_patch(ring_r, 8, rp, COCOA, 255, dot=8 * eob((lt - 0.95) / 0.4) if lt > 0.95 else 0)
         paste_center(layer, ring, x0 + oW + gap + ring_r, cy)
     # O, M
     a = eo3((lt - 0.9) / 0.6)
