@@ -1,0 +1,523 @@
+<title>나의 연애 날씨</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a single narrow column that reads like a weather app: forecast card on top, details stacked below. */
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --fg: #19202d;
+  --muted: #5a6477;
+  --line: #d8dde7;
+  --accent: #c93d63;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbe6ec;
+  --font-display: "Hahmlet", "Nanum Myeongjo", serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f131b; --surface: #171d28; --fg: #e7ebf2; --muted: #98a2b4; --line: #283041;
+    --accent: #f0728f; --accent-ink: #1a0c12; --accent-soft: #3a1a25; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f131b; --surface: #171d28; --fg: #e7ebf2; --muted: #98a2b4; --line: #283041;
+  --accent: #f0728f; --accent-ink: #1a0c12; --accent-soft: #3a1a25; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 56px;
+  word-break: keep-all;
+}
+.wrap { max-width: 600px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.25; }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 10px; }
+
+.eyebrow {
+  font-family: var(--font-data);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- Intro ---------- */
+.intro { display: grid; gap: 18px; }
+.intro h1 { font-size: clamp(34px, 8vw, 52px); font-weight: 800; letter-spacing: -0.02em; }
+.intro .lead { color: var(--muted); max-width: 34em; }
+.axes { display: grid; gap: 8px; padding: 0; margin: 4px 0 0; list-style: none; }
+.axes li { display: flex; gap: 10px; align-items: baseline; font-size: 15px; }
+.axes b { font-weight: 600; min-width: 3.2em; }
+.axes span { color: var(--muted); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 999px; padding: 14px 26px; font-weight: 600;
+  background: var(--accent); color: var(--accent-ink);
+  transition: transform .15s ease, filter .15s ease;
+}
+.btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.btn.ghost:hover { border-color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.types-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.types-head h2 { font-size: 20px; }
+.types-head small { color: var(--muted); font-size: 13px; }
+.types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .types { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.chip {
+  display: grid; gap: 6px; justify-items: start; text-align: left;
+  padding: 12px; border-radius: 14px; border: 0;
+  background: var(--sky); color: var(--ink);
+  transition: transform .15s ease;
+}
+.chip:hover { transform: translateY(-2px); }
+.chip svg { width: 28px; height: 28px; }
+.chip b { font-family: var(--font-display); font-size: 15px; font-weight: 700; line-height: 1.3; }
+.chip span { font-family: var(--font-data); font-size: 11px; opacity: .75; letter-spacing: .06em; }
+
+/* ---------- Quiz ---------- */
+.quiz { display: grid; gap: 22px; }
+.progress { display: grid; gap: 8px; }
+.progress-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.count { font-family: var(--font-data); font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width .3s ease; }
+.link { background: none; border: 0; padding: 4px 0; color: var(--muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.link:disabled { visibility: hidden; }
+.qtext { font-size: clamp(22px, 5.4vw, 28px); font-weight: 700; letter-spacing: -0.01em; min-height: 2.6em; }
+.options { display: grid; gap: 12px; }
+.opt {
+  display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; text-align: left;
+  padding: 18px 18px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface);
+  transition: border-color .15s ease, background .15s ease;
+}
+.opt:hover { border-color: var(--accent); }
+.opt.picked { border-color: var(--accent); background: var(--accent-soft); }
+.opt kbd {
+  font-family: var(--font-data); font-size: 12px; width: 26px; height: 26px; border-radius: 8px;
+  display: grid; place-items: center; border: 1.5px solid var(--line); color: var(--muted); margin-top: 1px;
+}
+.hint { color: var(--muted); font-size: 13px; }
+@media (hover: none) { .hint { display: none; } }
+
+/* ---------- Result ---------- */
+.result { display: grid; gap: 22px; }
+.forecast {
+  background: var(--sky); color: var(--ink);
+  border-radius: 24px; padding: 26px 24px 22px; display: grid; gap: 18px;
+  position: relative; overflow: hidden;
+}
+.forecast-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.forecast .eyebrow { color: inherit; opacity: .75; }
+.forecast h1 { font-size: clamp(36px, 9vw, 52px); font-weight: 800; letter-spacing: -0.02em; margin-top: 6px; }
+.forecast .tagline { font-size: 17px; font-weight: 500; margin-top: 4px; opacity: .92; }
+.forecast .big-icon { width: 84px; height: 84px; flex: none; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; border-top: 1px solid var(--rule); padding-top: 16px; }
+.metric { display: grid; gap: 2px; min-width: 0; }
+.metric span { font-size: 12px; opacity: .78; }
+.metric b { font-family: var(--font-data); font-weight: 500; font-size: clamp(20px, 5vw, 26px); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.metric small { font-size: 12px; opacity: .78; }
+
+.card { background: var(--surface); border-radius: 18px; padding: 20px; display: grid; gap: 14px; }
+.card h3 { font-size: 18px; }
+.desc { font-size: 16px; }
+
+.axis { display: grid; gap: 6px; }
+.axis-labels { display: flex; justify-content: space-between; font-size: 14px; gap: 8px; }
+.axis-labels b { font-weight: 600; }
+.axis-labels .dim { color: var(--muted); }
+.axis-labels em { font-style: normal; font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; }
+.axis-track { position: relative; height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.axis-track i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: inherit; }
+
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
+.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.card.alert { border: 1.5px dashed var(--line); background: transparent; }
+.tag {
+  font-family: var(--font-data); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted);
+}
+.match {
+  display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; text-align: left;
+  border: 0; border-radius: 16px; padding: 14px 16px; background: var(--sky); color: var(--ink);
+}
+.match svg { width: 40px; height: 40px; }
+.match b { font-family: var(--font-display); font-size: 17px; display: block; }
+.match span { font-size: 14px; opacity: .88; }
+.note { color: var(--muted); font-size: 13px; }
+.toast { font-size: 14px; color: var(--accent); min-height: 1.4em; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .enter { animation: rise .35s ease both; }
+  @keyframes rise { from { transform: translateY(8px); opacity: .4; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+
+  <!-- Intro -->
+  <section class="intro" id="intro">
+    <p class="eyebrow">Love Forecast · 15문항 · 약 3분</p>
+    <h1>나의 연애 날씨</h1>
+    <p class="lead">좋아하는 사람 앞에서 나는 뜨거운 햇볕일까, 조용히 쌓이는 첫눈일까. 15개의 질문에 답하면 세 가지 기준으로 나의 연애 스타일을 날씨 예보처럼 알려 드려요.</p>
+    <ul class="axes">
+      <li><b>표현</b><span>마음을 바로 말하는 직진형인지, 행동으로 보여 주는 은근형인지</span></li>
+      <li><b>속도</b><span>첫눈에 빠지는 불꽃형인지, 천천히 스며드는 뜸형인지</span></li>
+      <li><b>거리</b><span>늘 함께하고 싶은 밀착형인지, 각자의 시간이 필요한 독립형인지</span></li>
+    </ul>
+    <div class="row"><button class="btn" id="start" type="button">테스트 시작하기</button></div>
+    <div class="types-head" style="margin-top:14px">
+      <h2>8가지 연애 날씨</h2>
+      <small>눌러서 미리 보기</small>
+    </div>
+    <div class="types" id="types"></div>
+  </section>
+
+  <!-- Quiz -->
+  <section class="quiz" id="quiz" hidden>
+    <div class="progress">
+      <div class="progress-top">
+        <button class="link" id="back" type="button">이전 질문</button>
+        <span class="count" id="count">1 / 15</span>
+      </div>
+      <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+    </div>
+    <h2 class="qtext" id="qtext" aria-live="polite"></h2>
+    <div class="options" id="options"></div>
+    <p class="hint">키보드 1, 2로도 고를 수 있어요.</p>
+  </section>
+
+  <!-- Result -->
+  <section class="result" id="result" hidden></section>
+
+</div>
+
+<script>
+(() => {
+  /* ---------- Icons ---------- */
+  const rays = (n, r1, r2) => Array.from({ length: n }, (_, i) => {
+    const a = (Math.PI * 2 * i) / n;
+    const c = (r) => [24 + Math.cos(a) * r, 24 + Math.sin(a) * r].map(v => v.toFixed(1));
+    const [x1, y1] = c(r1), [x2, y2] = c(r2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }).join("");
+  const svg = (inner) => `<svg viewBox="0 0 48 48" aria-hidden="true">${inner}</svg>`;
+  const ICONS = {
+    sun: svg(`<circle cx="24" cy="24" r="9" fill="currentColor"/><g stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none">${rays(8, 14, 20)}</g>`),
+    gust: svg(`<g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 17h22a5 5 0 1 0-5-5"/><path d="M6 25h30a5 5 0 1 1-5 5"/><path d="M6 33h14"/></g>`),
+    spring: svg(`<circle cx="24" cy="24" r="10" fill="currentColor" opacity=".9"/><circle cx="24" cy="24" r="16" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 5" stroke-linecap="round"/>`),
+    autumn: svg(`<path d="M13 35h21a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0 0 13z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`),
+    tropical: svg(`<path d="M28 9a15 15 0 1 0 11 25A13 13 0 0 1 28 9z" fill="currentColor"/><circle cx="37" cy="12" r="1.8" fill="currentColor"/><circle cx="41" cy="20" r="1.2" fill="currentColor"/>`),
+    lightning: svg(`<path d="M27 5 12 27h11l-3 16 16-23H25l2-15z" fill="currentColor"/>`),
+    snow: svg(`<g stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M24 8v32M10.1 16l27.8 16M10.1 32l27.8-16"/><path d="M20 10l4 4 4-4M20 38l4-4 4 4"/></g>`),
+    fog: svg(`<g stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"><path d="M8 16h26"/><path d="M14 24h28"/><path d="M8 32h22"/><path d="M18 40h16"/></g>`)
+  };
+
+  /* ---------- Types (express E/I × speed F/S × distance T/A) ---------- */
+  const TYPES = {
+    EFT: { id: "sun", name: "한여름 태양", tag: "가진 마음을 숨기지 않는 사람",
+      sky: "linear-gradient(150deg,#ffcf70 0%,#ff8a5c 60%,#f2656a 100%)", ink: "#3a1308",
+      desc: "좋아하면 바로 표현하고, 빠르게 가까워지고, 매일 함께하고 싶어 합니다. 상대는 사랑받고 있다는 확신을 의심할 틈이 없어요. 연애가 삶의 중심에 가까워서 관계에 쏟는 에너지도 큽니다.",
+      good: ["애정 표현이 풍부해 상대가 불안할 일이 적다", "갈등이 생기면 미루지 않고 그날 푼다", "함께하는 시간을 즐겁게 만드는 데 진심이다"],
+      warn: ["상대의 속도가 느리면 ‘나만 좋아하나’ 싶어 서운해지기 쉽다", "연락 공백을 마음의 크기로 해석하지 않기"],
+      tip: "상대가 한 걸음 물러설 때 두 걸음 다가가기보다 한 박자 기다려 주세요. 햇볕은 조금 덜 뜨거울 때 더 오래 쬐고 싶어집니다.",
+      match: "EST", why: "표현 방식은 같고 속도만 조금 느려서, 나의 열기를 기분 좋게 식혀 줍니다." },
+    EFA: { id: "gust", name: "봄 돌풍", tag: "확 불어왔다가 제 길도 가는 사람",
+      sky: "linear-gradient(150deg,#c9f2d9 0%,#8fd9b6 55%,#5cbf9a 100%)", ink: "#0f3324",
+      desc: "끌리면 망설임 없이 다가가고 마음도 솔직하게 말합니다. 그런데 연애 중에도 내 일, 내 친구, 내 시간이 확실히 있어야 숨이 쉬어져요. 시작은 뜨겁고, 유지는 자유롭게.",
+      good: ["썸이 질질 끌리지 않고 시원시원하다", "서로의 삶을 존중해서 관계가 답답해지지 않는다", "새로운 데이트를 제안하는 아이디어가 많다"],
+      warn: ["상대는 ‘훅 들어왔다가 훅 멀어진다’고 느낄 수 있다", "혼자 시간이 필요할 땐 미리 말해 두기"],
+      tip: "“오늘은 혼자 쉬고 싶어. 너 때문은 아니야.” 이 한 문장이 많은 오해를 막아 줍니다.",
+      match: "ESA", why: "캐묻지 않고 각자의 시간을 존중하면서도 대화는 솔직하게 나눌 수 있어요." },
+    EST: { id: "spring", name: "봄날 햇살", tag: "따뜻함을 매일 조금씩 건네는 사람",
+      sky: "linear-gradient(150deg,#fff0b8 0%,#ffd3c4 55%,#f7b6c8 100%)", ink: "#3b1f2c",
+      desc: "마음은 분명하게 표현하지만 관계는 서두르지 않습니다. 믿음이 쌓이는 만큼 한 걸음씩 가까워지고, 일단 가까워지면 일상을 촘촘히 나누고 싶어 해요. 곁에 있으면 안심이 되는 연애를 합니다.",
+      good: ["말과 행동이 일치해 신뢰를 준다", "꾸준한 관심으로 관계를 오래 따뜻하게 유지한다", "상대의 하루를 궁금해하고 잘 들어 준다"],
+      warn: ["상대가 너무 빨리 다가오면 부담을 느끼고 뒤로 물러난다", "배려하느라 내 불편함을 늦게 말하는 편"],
+      tip: "속도가 다르다는 건 마음이 작다는 뜻이 아니라고, 상대에게 말로 알려 주세요.",
+      match: "IST", why: "같은 속도로 천천히 걸으면서, 서툰 상대 대신 내가 마음을 먼저 말로 꺼내 줄 수 있어요." },
+    ESA: { id: "autumn", name: "맑은 가을 하늘", tag: "담백하고 시야가 탁 트인 사람",
+      sky: "linear-gradient(150deg,#d9ecff 0%,#9dccf7 55%,#6aa8e8 100%)", ink: "#0d2742",
+      desc: "솔직하게 말하고, 천천히 가까워지며, 각자의 삶을 존중합니다. 감정 소모가 적고 대화가 잘 통하는 연애를 좋아해요. 친구 같은 연인이 이상형인 경우가 많습니다.",
+      good: ["갈등을 대화로 차분하게 푼다", "질투나 집착이 적어 상대가 편안하다", "서로의 성장을 응원하는 관계를 만든다"],
+      warn: ["너무 담백해서 상대가 ‘나를 정말 좋아하나’ 헷갈릴 수 있다", "설렘을 일부러 만드는 노력이 필요할 때도 있다"],
+      tip: "가끔은 이유 없는 연락 한 통을 보내 보세요. 맑은 하늘에도 구름 한 점이 있어야 그림이 됩니다.",
+      match: "ISA", why: "재촉하지 않는 나의 여유가 상대의 마음이 천천히 걷힐 시간을 벌어 줍니다." },
+    IFT: { id: "tropical", name: "여름밤 열대야", tag: "속에서 오래 끓는 사람",
+      sky: "linear-gradient(150deg,#2a1d4d 0%,#6b2d6e 55%,#c2477a 100%)", ink: "#fff1f6",
+      desc: "금방 깊이 빠지지만 그 마음을 말로 꺼내기는 어렵습니다. 대신 늘 곁에 있고 싶고, 상대의 작은 반응 하나에 하루 기분이 달라져요. 겉보다 속이 훨씬 뜨거운 타입입니다.",
+      good: ["한 사람에게 깊이 몰입하고 헌신한다", "상대의 기분 변화를 누구보다 빨리 알아챈다", "말보다 꾸준한 행동으로 마음을 증명한다"],
+      warn: ["표현 없이 기대만 쌓이면 혼자 서운해지기 쉽다", "답장 속도로 상대의 마음을 재지 않기"],
+      tip: "마음을 다 말하기 어렵다면 “나 지금 좀 서운해” 한 줄만이라도 보내 보세요. 열대야는 창문을 열어야 식습니다.",
+      match: "EST", why: "표현을 먼저 해 주는 상대 덕분에 나도 마음을 꺼내기가 쉬워져요." },
+    IFA: { id: "lightning", name: "마른 번개", tag: "한순간 강렬하고, 금세 고요해지는 사람",
+      sky: "linear-gradient(150deg,#1d2430 0%,#38404f 60%,#55607a 100%)", ink: "#fbf3c0",
+      desc: "끌림은 번개처럼 빠르게 옵니다. 하지만 표현은 짧고, 혼자만의 공간도 꼭 필요해요. 상대에게는 매력적인 미스터리로 보이기 쉽고, 본인도 자기 마음을 한참 뒤에 알아차리곤 합니다.",
+      good: ["관계에 끌려다니지 않고 자기 중심이 단단하다", "짧지만 진심이 담긴 한마디가 큰 울림을 준다", "상대에게도 충분한 자유를 준다"],
+      warn: ["상대는 내 마음을 추측하느라 지칠 수 있다", "거리 두기가 회피로 보이지 않게 신경 쓰기"],
+      tip: "혼자 있고 싶을 때 말없이 사라지기보다 “잠깐 충전하고 올게”라고 남겨 두세요.",
+      match: "ESA", why: "캐묻지 않고 기다려 주는 여유가 있어서, 내가 돌아올 자리를 편하게 남겨 줘요." },
+    IST: { id: "snow", name: "첫눈", tag: "조용히, 그러나 확실히 쌓이는 사람",
+      sky: "linear-gradient(150deg,#ffffff 0%,#e6eef7 55%,#c9d8ea 100%)", ink: "#1f3249",
+      desc: "천천히 마음을 열고 표현은 서툴지만, 한번 곁을 내주면 오래 머뭅니다. 화려한 이벤트보다 같이 밥 먹고 산책하는 평범한 하루를 사랑해요. 시간이 지날수록 진가가 드러나는 타입입니다.",
+      good: ["한결같고 믿음직하다", "상대의 사소한 취향까지 기억한다", "안정적이고 편안한 관계를 만든다"],
+      warn: ["마음을 열기까지 오래 걸려 시작 단계에서 오해를 사기 쉽다", "서운함을 꾹 참다가 한 번에 터질 수 있다"],
+      tip: "좋아한다는 신호를 조금만 일찍 보내 주세요. 첫눈은 내리는 순간 알아봐 주는 사람이 있을 때 더 특별합니다.",
+      match: "EST", why: "같은 속도로 걸어 주면서, 내가 꺼내지 못한 말을 먼저 건네 주는 사람이에요." },
+    ISA: { id: "fog", name: "새벽 안개", tag: "가까이 갈수록 보이는 사람",
+      sky: "linear-gradient(150deg,#eef0f3 0%,#cfd5dd 55%,#aab4c1 100%)", ink: "#26303d",
+      desc: "표현도, 속도도, 거리도 조심스럽습니다. 혼자서도 충분히 잘 지내기에 연애는 ‘꼭 필요해서’가 아니라 ‘이 사람이라서’ 합니다. 안개가 걷히듯 천천히 자신을 보여 주는 타입이에요.",
+      good: ["상대를 쉽게 판단하지 않고 깊이 이해하려 한다", "혼자서도 단단해 관계에 과하게 기대지 않는다", "한번 마음을 열면 깊고 진지하다"],
+      warn: ["상대가 거리감을 ‘관심 없음’으로 오해할 수 있다", "마음의 문을 여는 타이밍을 놓치기 쉽다"],
+      tip: "다 보여 주지 않아도 괜찮아요. 다만 ‘지금 내 마음이 어디쯤 있는지’는 가끔 알려 주세요.",
+      match: "ESA", why: "솔직하지만 재촉하지 않아서, 내 속도대로 마음을 열 수 있게 해 줘요." }
+  };
+  const BY_ID = Object.fromEntries(Object.entries(TYPES).map(([k, t]) => [t.id, k]));
+
+  /* ---------- Questions: v = 1 means the first pole (E / F / T) ---------- */
+  const QUESTIONS = [
+    { axis: 0, q: "좋아하는 사람이 생겼다. 나는?", o: [["티가 난다. 연락도 먼저 하고 칭찬도 바로 한다", 1], ["일단 지켜본다. 들키는 게 조금 부끄럽다", 0]] },
+    { axis: 1, q: "소개팅 상대가 꽤 괜찮았다. 두 번째 만남은?", o: [["며칠 연락하면서 대화가 잘 맞는지 본 다음에", 0], ["헤어지자마자 “다음 주 언제 시간 돼요?”", 1]] },
+    { axis: 2, q: "내가 생각하는 이상적인 연락 빈도는?", o: [["틈틈이 일상을 공유한다. 점심 메뉴까지", 1], ["하루 몇 번이면 충분. 각자 할 일 하다가 밤에 통화", 0]] },
+    { axis: 0, q: "애인이 서운한 행동을 했다.", o: [["혼자 정리해 보고, 며칠 뒤에도 남아 있으면 그때 꺼낸다", 0], ["그날 바로 “나 이거 서운했어”라고 말한다", 1]] },
+    { axis: 1, q: "연애가 시작되는 계기는 주로?", o: [["첫 만남부터 확 끌리는 느낌이 온다", 1], ["오래 알던 사이에서 어느 날 문득", 0]] },
+    { axis: 2, q: "연애 중의 주말 계획은?", o: [["하루는 데이트, 하루는 나만의 시간", 0], ["특별한 일 없으면 당연히 애인과 함께", 1]] },
+    { axis: 0, q: "기념일에 더 하고 싶은 것은?", o: [["손편지나 영상처럼 마음을 말로 전하는 이벤트", 1], ["지나가듯 했던 말을 기억해 뒀다가 조용히 건네는 선물", 0]] },
+    { axis: 1, q: "사귄 지 한 달, 애인이 가족 모임에 초대했다.", o: [["조금 이르다. 몇 달 더 지나서 가고 싶다", 0], ["좋다. 빨리 더 가까워지고 싶다", 1]] },
+    { axis: 2, q: "애인이 친구들과 2박 3일 여행을 간다.", o: [["잘 다녀오라고 하면서도 내심 허전하다", 1], ["나도 이참에 하고 싶던 걸 한다", 0]] },
+    { axis: 0, q: "‘사랑해’라는 말은?", o: [["마음이 꽉 찼을 때만. 그래서 무겁다", 0], ["하루에도 여러 번. 아낄 이유가 없다", 1]] },
+    { axis: 1, q: "썸은 어느 정도가 적당할까?", o: [["2~3주면 충분하다. 길어지면 식는다", 1], ["두세 달은 지켜봐야 확신이 선다", 0]] },
+    { axis: 2, q: "같이 살게 된다면 집에서는?", o: [["각자의 방이나 책상 하나는 꼭 있어야 한다", 0], ["같은 공간에서 같이 뒹구는 게 좋다", 1]] },
+    { axis: 0, q: "애인과 찍은 사진, SNS에는?", o: [["올리고 싶다. 자랑하고 싶다", 1], ["둘만 알면 충분하다", 0]] },
+    { axis: 1, q: "이별한 뒤의 나는?", o: [["겉으로는 괜찮은데 오래 남는다", 0], ["크게 아프지만 회복도 빠르다", 1]] },
+    { axis: 2, q: "애인이 갑자기 “지금 보러 갈게!”라고 한다면?", o: [["반갑다. 예고 없는 방문도 좋다", 1], ["반갑지만 미리 말해 줬으면 좋겠다", 0]] }
+  ];
+  const PER_AXIS = QUESTIONS.length / 3;
+  const AXES = [
+    { left: "직진", right: "은근", name: "표현" },
+    { left: "불꽃", right: "뜸", name: "속도" },
+    { left: "밀착", right: "독립", name: "거리" }
+  ];
+
+  /* ---------- State ---------- */
+  const $ = (id) => document.getElementById(id);
+  const views = { intro: $("intro"), quiz: $("quiz"), result: $("result") };
+  let answers = [];
+  let current = 0;
+  let shownType = null;
+  let shownScores = null;
+
+  const show = (name) => {
+    for (const [k, el] of Object.entries(views)) el.hidden = k !== name;
+    views[name].classList.remove("enter"); void views[name].offsetWidth; views[name].classList.add("enter");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  /* ---------- Intro grid ---------- */
+  $("types").innerHTML = Object.entries(TYPES).map(([code, t]) => `
+    <button class="chip" type="button" data-code="${code}" style="--sky:${t.sky};--ink:${t.ink}">
+      ${ICONS[t.id]}<b>${t.name}</b><span>${code}</span>
+    </button>`).join("");
+  $("types").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    location.hash = TYPES[b.dataset.code].id;
+  });
+
+  /* ---------- Quiz ---------- */
+  const startQuiz = () => { answers = []; current = 0; shownType = null; renderQuestion(); show("quiz"); };
+  $("start").addEventListener("click", () => { if (location.hash) history.replaceState(null, "", location.pathname + location.search); startQuiz(); });
+
+  const renderQuestion = () => {
+    const item = QUESTIONS[current];
+    $("count").textContent = `${current + 1} / ${QUESTIONS.length}`;
+    $("bar").style.width = `${(current / QUESTIONS.length) * 100}%`;
+    $("back").disabled = current === 0;
+    $("qtext").textContent = item.q;
+    $("options").innerHTML = item.o.map(([text, v], i) => `
+      <button class="opt${answers[current] === v ? " picked" : ""}" type="button" id="opt-${i}" data-v="${v}">
+        <kbd>${i + 1}</kbd><span>${text}</span>
+      </button>`).join("");
+  };
+
+  let locked = false;
+  const choose = (btn) => {
+    if (locked || !btn) return;
+    locked = true;
+    btn.classList.add("picked");
+    answers[current] = Number(btn.dataset.v);
+    setTimeout(() => {
+      locked = false;
+      if (current < QUESTIONS.length - 1) { current++; renderQuestion(); }
+      else finish();
+    }, 220);
+  };
+  $("options").addEventListener("click", (e) => choose(e.target.closest(".opt")));
+  $("back").addEventListener("click", () => { if (current > 0) { current--; renderQuestion(); } });
+  document.addEventListener("keydown", (e) => {
+    if (views.quiz.hidden) return;
+    if (e.key === "1" || e.key === "2") choose($(`opt-${Number(e.key) - 1}`));
+    if (e.key === "Backspace" && current > 0) { current--; renderQuestion(); }
+  });
+
+  /* ---------- Scoring ---------- */
+  const scoresFrom = (ans) => [0, 1, 2].map(axis =>
+    QUESTIONS.reduce((s, q, i) => s + (q.axis === axis ? ans[i] : 0), 0) / PER_AXIS);
+  const codeFrom = (s) => (s[0] > 0.5 ? "E" : "I") + (s[1] > 0.5 ? "F" : "S") + (s[2] > 0.5 ? "T" : "A");
+  const canonical = (code) => [code[0] === "E" ? 0.8 : 0.2, code[1] === "F" ? 0.8 : 0.2, code[2] === "T" ? 0.8 : 0.2];
+
+  const finish = () => {
+    $("bar").style.width = "100%";
+    const s = scoresFrom(answers);
+    renderResult(codeFrom(s), s, true);
+  };
+
+  /* ---------- Result ---------- */
+  const forecast = (s) => {
+    const [e, f, t] = s;
+    const temp = Math.round(14 + f * 14 + e * 8);          // 연애 기온 14–36°C
+    const confess = Math.round(10 + e * 60 + f * 25);       // 고백 확률 10–95%
+    const wind = Math.round(1 + (1 - t) * 11);              // 개인공간 풍속 1–12 m/s
+    const windWord = wind <= 3 ? "고요" : wind <= 6 ? "산들바람" : wind <= 9 ? "선선한 바람" : "강한 바람";
+    const tempWord = temp >= 30 ? "무더위" : temp >= 24 ? "따뜻함" : temp >= 19 ? "포근함" : "선선함";
+    const confessWord = confess >= 70 ? "먼저 고백" : confess >= 40 ? "분위기 보고" : "기다리는 편";
+    return { temp, confess, wind, windWord, tempWord, confessWord };
+  };
+
+  const renderResult = (code, s, fromQuiz) => {
+    const t = TYPES[code];
+    const m = TYPES[t.match];
+    const fc = forecast(s);
+    shownType = code; shownScores = s;
+    const sky = `--sky:${t.sky};--ink:${t.ink};--rule:color-mix(in srgb, ${t.ink} 22%, transparent)`;
+    const axisRows = AXES.map((a, i) => {
+      const pct = Math.round(s[i] * 100);
+      const leftWins = pct > 50;
+      return `<div class="axis">
+        <div class="axis-labels">
+          <span class="${leftWins ? "" : "dim"}"><b>${a.left}</b> <em>${pct}%</em></span>
+          <span class="dim">${a.name}</span>
+          <span class="${leftWins ? "dim" : ""}"><em>${100 - pct}%</em> <b>${a.right}</b></span>
+        </div>
+        <div class="axis-track"><i style="width:${pct}%"></i></div>
+      </div>`;
+    }).join("");
+
+    views.result.innerHTML = `
+      <div class="forecast" style="${sky}">
+        <div class="forecast-top">
+          <div>
+            <p class="eyebrow">${fromQuiz ? "오늘의 연애 예보" : "연애 날씨 미리 보기"} · ${code}</p>
+            <h1>${t.name}</h1>
+            <p class="tagline">${t.tag}</p>
+          </div>
+          <div class="big-icon">${ICONS[t.id]}</div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span>연애 기온</span><b>${fc.temp}°C</b><small>${fc.tempWord}</small></div>
+          <div class="metric"><span>고백 확률</span><b>${fc.confess}%</b><small>${fc.confessWord}</small></div>
+          <div class="metric"><span>개인공간 풍속</span><b>${fc.wind}m/s</b><small>${fc.windWord}</small></div>
+        </div>
+      </div>
+
+      <div class="card"><p class="desc">${t.desc}</p></div>
+
+      <div class="card">
+        <h3>${fromQuiz ? "나의 세 가지 기준" : "이 유형의 대표적인 모습"}</h3>
+        ${axisRows}
+        ${fromQuiz ? "" : `<p class="note">테스트를 하면 내 답변으로 계산한 수치가 표시돼요.</p>`}
+      </div>
+
+      <div class="two">
+        <div class="card"><span class="tag">맑음 · 강점</span><ul class="list">${t.good.map(x => `<li>${x}</li>`).join("")}</ul></div>
+        <div class="card alert"><span class="tag">주의보</span><ul class="list">${t.warn.map(x => `<li>${x}</li>`).join("")}</ul></div>
+      </div>
+
+      <div class="card"><span class="tag">연애 팁</span><p>${t.tip}</p></div>
+
+      <div class="card">
+        <span class="tag">잘 맞는 날씨</span>
+        <button class="match" type="button" data-code="${t.match}" style="--sky:${m.sky};--ink:${m.ink}">
+          ${ICONS[m.id]}<div><b>${m.name}</b><span>${t.why}</span></div>
+        </button>
+      </div>
+
+      <div class="row">
+        ${fromQuiz
+          ? `<button class="btn" type="button" id="copy">결과 문구 복사</button><button class="btn ghost" type="button" id="again">다시 하기</button>`
+          : `<button class="btn" type="button" id="again">나도 테스트하기</button><button class="btn ghost" type="button" id="home">처음으로</button>`}
+      </div>
+      <p class="toast" id="toast" role="status"></p>
+      <textarea id="copy-fallback" hidden readonly rows="3" style="width:100%;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg)"></textarea>
+      <p class="note">재미로 보는 테스트예요. 사람의 연애는 상대와 상황에 따라 얼마든지 달라질 수 있어요.</p>
+    `;
+    show("result");
+  };
+
+  views.result.addEventListener("click", async (e) => {
+    const match = e.target.closest(".match");
+    if (match) { location.hash = TYPES[match.dataset.code].id; return; }
+    const id = e.target.closest("button")?.id;
+    if (id === "again") { if (location.hash) history.replaceState(null, "", location.pathname + location.search); startQuiz(); }
+    if (id === "home") { history.replaceState(null, "", location.pathname + location.search); show("intro"); }
+    if (id === "copy") {
+      const t = TYPES[shownType]; const fc = forecast(shownScores);
+      const text = `나의 연애 날씨는 ‘${t.name}’ (${shownType}). ${t.tag}.\n연애 기온 ${fc.temp}°C · 고백 확률 ${fc.confess}% · 개인공간 풍속 ${fc.wind}m/s`;
+      try {
+        await navigator.clipboard.writeText(text);
+        $("toast").textContent = "결과 문구를 복사했어요.";
+      } catch {
+        const ta = $("copy-fallback"); ta.hidden = false; ta.value = text; ta.focus(); ta.select();
+        $("toast").textContent = "자동 복사가 막혀 있어요. 아래 문구를 길게 눌러 복사해 주세요.";
+      }
+    }
+  });
+
+  /* ---------- Hash: #sun, #snow ... opens a type preview ---------- */
+  const fromHash = () => {
+    const code = BY_ID[location.hash.slice(1)];
+    if (code) renderResult(code, canonical(code), false);
+    else if (!views.result.hidden && !shownScores) show("intro");
+  };
+  window.addEventListener("hashchange", () => {
+    const code = BY_ID[location.hash.slice(1)];
+    if (code) { shownScores = null; renderResult(code, canonical(code), false); }
+    else show("intro");
+  });
+
+  /* ---------- Boot (keeps quiz progress across live updates) ---------- */
+  const start = (data) => {
+    if (data && Array.isArray(data.answers) && data.view === "quiz") {
+      answers = data.answers; current = data.current || 0; renderQuestion(); show("quiz");
+    } else if (data && data.view === "result" && data.code && data.scores) {
+      renderResult(data.code, data.scores, true);
+    } else {
+      fromHash();
+    }
+  };
+  window.claude?.hot?.snapshot?.(() => ({
+    view: !views.quiz.hidden ? "quiz" : (!views.result.hidden && !location.hash ? "result" : "intro"),
+    answers, current, code: shownType, scores: shownScores
+  }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
